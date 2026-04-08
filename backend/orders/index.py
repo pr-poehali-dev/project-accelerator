@@ -34,7 +34,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 400, 'headers': headers, 'body': json.dumps({'error': 'Неверные данные'})}
 
         price = prices[plan]
-        order_date = date.today().isoformat()
+        order_date = body.get('order_date') or date.today().isoformat()
 
         cur.execute(
             "INSERT INTO orders (full_name, plan, price, order_date) VALUES (%s, %s, %s, %s) RETURNING id",

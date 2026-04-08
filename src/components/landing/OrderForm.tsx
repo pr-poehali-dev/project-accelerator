@@ -30,10 +30,10 @@ export default function OrderForm({ menu, isActive, onSuccess }: Props) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string>(menu[0]?.date ?? '')
   const { toast } = useToast()
 
-  const today = new Date().toISOString().split('T')[0]
-  const todayMenu = menu.find(m => m.date === today)
+  const selectedMenuDay = menu.find(m => m.date === selectedDate)
 
   const handleOrder = async () => {
     if (!selectedPlan) {
@@ -44,12 +44,16 @@ export default function OrderForm({ menu, isActive, onSuccess }: Props) {
       toast({ title: 'Введите ваше ФИО', variant: 'destructive' })
       return
     }
+    if (!selectedDate) {
+      toast({ title: 'Выберите дату', variant: 'destructive' })
+      return
+    }
 
     setLoading(true)
     const res = await fetch(ORDERS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ full_name: fullName.trim(), plan: selectedPlan })
+      body: JSON.stringify({ full_name: fullName.trim(), plan: selectedPlan, order_date: selectedDate })
     })
     const data = await res.json()
     setLoading(false)
@@ -66,9 +70,35 @@ export default function OrderForm({ menu, isActive, onSuccess }: Props) {
 
   return (
     <div className="w-full max-w-3xl">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+
+      {/* Выбор дня */}
+      {menu.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isActive ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.4 }}
+          className="flex flex-wrap gap-2 mb-6"
+        >
+          {menu.map(day => (
+            <button
+              key={day.date}
+              onClick={() => setSelectedDate(day.date)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                selectedDate === day.date
+                  ? 'bg-[#FF4D00] text-white'
+                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              }`}
+            >
+              {day.day}
+            </button>
+          ))}
+        </motion.div>
+      )}
+
+      {/* Карточки тарифов */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {plans.map((plan, i) => {
-          const dish = todayMenu ? todayMenu[plan.id as keyof MenuDay] : ''
+          const dish = selectedMenuDay ? selectedMenuDay[plan.id as keyof MenuDay] : ''
           return (
             <motion.div
               key={plan.id}
@@ -87,7 +117,9 @@ export default function OrderForm({ menu, isActive, onSuccess }: Props) {
               <div className="text-sm text-neutral-400 mb-3">{plan.desc}</div>
               {dish && (
                 <div className="text-sm text-neutral-300 border-t border-neutral-700 pt-3">
-                  <span className="text-neutral-500 text-xs uppercase tracking-wide">Сегодня:</span>
+                  <span className="text-neutral-500 text-xs uppercase tracking-wide">
+                    {selectedMenuDay?.day}:
+                  </span>
                   <div className="mt-1">{dish}</div>
                 </div>
               )}
@@ -96,6 +128,7 @@ export default function OrderForm({ menu, isActive, onSuccess }: Props) {
         })}
       </div>
 
+      {/* ФИО + кнопка */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={isActive ? { opacity: 1, y: 0 } : {}}
