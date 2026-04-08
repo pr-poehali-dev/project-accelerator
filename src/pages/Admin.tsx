@@ -178,7 +178,7 @@ export default function Admin() {
           <div class="stat"><div class="stat-label">Выручка</div><div class="stat-val revenue">${revenue.toLocaleString()} ₽</div></div>
         </div>
         <table>
-          <thead><tr><th>ФИО</th><th>Тариф</th><th>Сумма</th><th>Дата заказа</th></tr></thead>
+          <thead><tr><th>ФИО</th><th>Тип обеда</th><th>Цена</th><th>Дата заказа</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </body></html>
@@ -301,8 +301,8 @@ export default function Admin() {
                     <thead>
                       <tr className="border-b border-neutral-800 text-neutral-400">
                         <th className="text-left p-4 font-medium">ФИО</th>
-                        <th className="text-left p-4 font-medium">Тариф</th>
-                        <th className="text-left p-4 font-medium">Сумма</th>
+                        <th className="text-left p-4 font-medium">Тип обеда</th>
+                        <th className="text-left p-4 font-medium">Цена</th>
                         <th className="text-left p-4 font-medium">Дата</th>
                         <th className="text-left p-4 font-medium">Действия</th>
                       </tr>
