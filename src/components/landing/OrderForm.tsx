@@ -8,7 +8,7 @@ const ORDERS_URL = 'https://functions.poehali.dev/9bfc9070-3a77-4016-90ab-464e82
 
 const plans = [
   { id: 'standard', label: 'Стандарт', price: 350, desc: 'Суп + второе блюдо + салат' },
-  { id: 'standard_plus', label: 'Стандарт+', price: 450, desc: 'Суп + второе + салат + напиток' },
+  { id: 'standard_plus', label: 'Стандарт+', price: 450, desc: 'Суп + второе + салат' },
   { id: 'premium', label: 'Премиум', price: 650, desc: 'Суп + второе + салат + напиток + десерт' },
 ]
 
