@@ -106,7 +106,7 @@ export default function LandingPage() {
             animate={activeSection === 0 ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Три тарифа на любой вкус и бюджет. Выбираете тариф, указываете имя — мы всё остальное.
+            Три типа обеда на любой вкус и бюджет. Выбираете тип, указываете имя — мы всё остальное.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -131,7 +131,7 @@ export default function LandingPage() {
             animate={activeSection === 1 ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
           >
-            Выберите тариф
+            Выберите тип
           </motion.h2>
           <motion.p
             className="text-neutral-400 mb-8"

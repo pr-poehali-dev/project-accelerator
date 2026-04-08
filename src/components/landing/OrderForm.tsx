@@ -37,7 +37,7 @@ export default function OrderForm({ menu, isActive, onSuccess }: Props) {
 
   const handleOrder = async () => {
     if (!selectedPlan) {
-      toast({ title: 'Выберите тариф', variant: 'destructive' })
+      toast({ title: 'Выберите тип', variant: 'destructive' })
       return
     }
     if (!fullName.trim()) {
