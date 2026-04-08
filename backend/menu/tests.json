@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "GET menu for the week",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST save menu",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "menu": [
+          {
+            "date": "2026-04-07",
+            "standard": "Борщ + гречка с котлетой",
+            "standard_plus": "Суп-крем + паста с курицей",
+            "premium": "Том ям + стейк с овощами"
+          }
+        ]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

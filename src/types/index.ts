@@ -12,3 +12,11 @@ export interface Section {
 export interface SectionProps extends Section {
   isActive: boolean
 }
+
+export interface MenuDay {
+  date: string
+  day: string
+  standard: string
+  standard_plus: string
+  premium: string
+}
