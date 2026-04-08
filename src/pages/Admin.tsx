@@ -50,6 +50,7 @@ export default function Admin() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [editName, setEditName] = useState('')
   const [editPlan, setEditPlan] = useState('')
+  const [filterDate, setFilterDate] = useState<string>('')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -136,6 +137,60 @@ export default function Admin() {
     }
   }
 
+  const handlePrint = () => {
+    const filtered = filterDate ? orders.filter(o => o.order_date === filterDate) : orders
+    const dateLabel = filterDate || 'все даты'
+
+    const countByPlan = { standard: 0, standard_plus: 0, premium: 0 }
+    filtered.forEach(o => {
+      if (o.plan in countByPlan) countByPlan[o.plan as keyof typeof countByPlan]++
+    })
+    const revenue = countByPlan.standard * 350 + countByPlan.standard_plus * 450 + countByPlan.premium * 650
+
+    const rows = filtered.map(o =>
+      `<tr><td>${o.full_name}</td><td>${o.plan_label}</td><td>${o.price} ₽</td><td>${o.order_date}</td></tr>`
+    ).join('')
+
+    const html = `
+      <html><head><meta charset="utf-8"><title>Заказы обедов</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+        h1 { font-size: 20px; margin-bottom: 4px; }
+        .sub { color: #666; font-size: 13px; margin-bottom: 20px; }
+        .stats { display: flex; gap: 24px; margin-bottom: 20px; }
+        .stat { background: #f5f5f5; border-radius: 8px; padding: 10px 16px; }
+        .stat-label { font-size: 11px; color: #888; text-transform: uppercase; }
+        .stat-val { font-size: 22px; font-weight: 900; }
+        .revenue { color: #e03d00; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; border-bottom: 2px solid #ddd; padding: 8px 12px; color: #555; }
+        td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+        @media print { button { display: none; } }
+      </style></head>
+      <body>
+        <h1>Список заказов обедов</h1>
+        <div class="sub">Дата: ${dateLabel} · Распечатано: ${new Date().toLocaleString('ru')}</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-label">Всего</div><div class="stat-val">${filtered.length}</div></div>
+          <div class="stat"><div class="stat-label">Стандарт</div><div class="stat-val">${countByPlan.standard}</div></div>
+          <div class="stat"><div class="stat-label">Стандарт+</div><div class="stat-val">${countByPlan.standard_plus}</div></div>
+          <div class="stat"><div class="stat-label">Премиум</div><div class="stat-val">${countByPlan.premium}</div></div>
+          <div class="stat"><div class="stat-label">Выручка</div><div class="stat-val revenue">${revenue.toLocaleString()} ₽</div></div>
+        </div>
+        <table>
+          <thead><tr><th>ФИО</th><th>Тариф</th><th>Сумма</th><th>Дата заказа</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body></html>
+    `
+    const w = window.open('', '_blank')
+    if (w) {
+      w.document.write(html)
+      w.document.close()
+      w.print()
+    }
+  }
+
   if (!auth) {
     return (
       <Layout>
@@ -151,10 +206,7 @@ export default function Admin() {
               onKeyDown={e => e.key === 'Enter' && handlePin()}
               className="bg-neutral-800 border-neutral-700 text-white mb-4"
             />
-            <Button
-              onClick={handlePin}
-              className="w-full bg-[#FF4D00] hover:bg-[#e03d00] text-white font-semibold"
-            >
+            <Button onClick={handlePin} className="w-full bg-[#FF4D00] hover:bg-[#e03d00] text-white font-semibold">
               Войти
             </Button>
           </div>
@@ -165,6 +217,8 @@ export default function Admin() {
 
   const totalOrders = counts.standard + counts.standard_plus + counts.premium
   const totalRevenue = counts.standard * 350 + counts.standard_plus * 450 + counts.premium * 650
+
+  const filteredOrders = filterDate ? orders.filter(o => o.order_date === filterDate) : orders
 
   return (
     <Layout>
@@ -193,7 +247,7 @@ export default function Admin() {
           </div>
 
           <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl p-4 mb-8 inline-block">
-            <span className="text-neutral-400 text-sm">Выручка сегодня: </span>
+            <span className="text-neutral-400 text-sm">Выручка: </span>
             <span className="text-[#FF4D00] font-bold text-xl">{totalRevenue.toLocaleString()} ₽</span>
           </div>
 
@@ -213,98 +267,109 @@ export default function Admin() {
           </div>
 
           {tab === 'orders' && (
-            <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl overflow-hidden">
-              {orders.length === 0 ? (
-                <div className="p-8 text-center text-neutral-500">Заказов пока нет</div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-800 text-neutral-400">
-                      <th className="text-left p-4 font-medium">ФИО</th>
-                      <th className="text-left p-4 font-medium">Тариф</th>
-                      <th className="text-left p-4 font-medium">Сумма</th>
-                      <th className="text-left p-4 font-medium">Дата</th>
-                      <th className="text-left p-4 font-medium">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map(order => (
-                      <tr key={order.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/30">
-                        {editingOrder?.id === order.id ? (
-                          <>
-                            <td className="p-3">
-                              <Input
-                                value={editName}
-                                onChange={e => setEditName(e.target.value)}
-                                className="bg-neutral-700 border-neutral-600 text-white text-sm h-8"
-                              />
-                            </td>
-                            <td className="p-3">
-                              <select
-                                value={editPlan}
-                                onChange={e => setEditPlan(e.target.value)}
-                                className="bg-neutral-700 border border-neutral-600 text-white text-sm rounded-md px-2 h-8 w-full"
-                              >
-                                {PLAN_OPTIONS.map(p => (
-                                  <option key={p.value} value={p.value}>{p.label}</option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="p-3 text-[#FF4D00] font-semibold">
-                              {editPlan === 'standard' ? 350 : editPlan === 'standard_plus' ? 450 : 650} ₽
-                            </td>
-                            <td className="p-4 text-neutral-400">{order.order_date}</td>
-                            <td className="p-3">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={handleSaveOrder}
-                                  className="text-green-400 hover:text-green-300 transition-colors"
-                                  title="Сохранить"
-                                >
-                                  <Icon name="Check" size={16} />
-                                </button>
-                                <button
-                                  onClick={() => setEditingOrder(null)}
-                                  className="text-neutral-400 hover:text-white transition-colors"
-                                  title="Отмена"
-                                >
-                                  <Icon name="X" size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="p-4 text-white">{order.full_name}</td>
-                            <td className="p-4 text-neutral-300">{order.plan_label}</td>
-                            <td className="p-4 text-[#FF4D00] font-semibold">{order.price} ₽</td>
-                            <td className="p-4 text-neutral-400">{order.order_date}</td>
-                            <td className="p-4">
-                              <div className="flex gap-3">
-                                <button
-                                  onClick={() => handleEditOrder(order)}
-                                  className="text-neutral-400 hover:text-white transition-colors"
-                                  title="Редактировать"
-                                >
-                                  <Icon name="Pencil" size={15} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteOrder(order.id)}
-                                  className="text-neutral-400 hover:text-red-400 transition-colors"
-                                  title="Удалить"
-                                >
-                                  <Icon name="Trash2" size={15} />
-                                </button>
-                              </div>
-                            </td>
-                          </>
-                        )}
-                      </tr>
+            <>
+              {/* Фильтр и печать */}
+              <div className="flex flex-wrap gap-3 items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-neutral-400 text-sm">Дата:</span>
+                  <select
+                    value={filterDate}
+                    onChange={e => setFilterDate(e.target.value)}
+                    className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded-lg px-3 py-2"
+                  >
+                    <option value="">Все дни</option>
+                    {Array.from(new Set(orders.map(o => o.order_date))).sort().map(d => (
+                      <option key={d} value={d}>{d}</option>
                     ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                  </select>
+                </div>
+                <Button
+                  onClick={handlePrint}
+                  variant="outline"
+                  className="border-neutral-600 text-neutral-300 hover:text-white hover:border-white gap-2"
+                >
+                  <Icon name="Printer" size={15} />
+                  Распечатать
+                </Button>
+              </div>
+
+              <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl overflow-hidden">
+                {filteredOrders.length === 0 ? (
+                  <div className="p-8 text-center text-neutral-500">Заказов пока нет</div>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-neutral-800 text-neutral-400">
+                        <th className="text-left p-4 font-medium">ФИО</th>
+                        <th className="text-left p-4 font-medium">Тариф</th>
+                        <th className="text-left p-4 font-medium">Сумма</th>
+                        <th className="text-left p-4 font-medium">Дата</th>
+                        <th className="text-left p-4 font-medium">Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredOrders.map(order => (
+                        <tr key={order.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/30">
+                          {editingOrder?.id === order.id ? (
+                            <>
+                              <td className="p-3">
+                                <Input
+                                  value={editName}
+                                  onChange={e => setEditName(e.target.value)}
+                                  className="bg-neutral-700 border-neutral-600 text-white text-sm h-8"
+                                />
+                              </td>
+                              <td className="p-3">
+                                <select
+                                  value={editPlan}
+                                  onChange={e => setEditPlan(e.target.value)}
+                                  className="bg-neutral-700 border border-neutral-600 text-white text-sm rounded-md px-2 h-8 w-full"
+                                >
+                                  {PLAN_OPTIONS.map(p => (
+                                    <option key={p.value} value={p.value}>{p.label}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="p-3 text-[#FF4D00] font-semibold">
+                                {editPlan === 'standard' ? 350 : editPlan === 'standard_plus' ? 450 : 650} ₽
+                              </td>
+                              <td className="p-4 text-neutral-400">{order.order_date}</td>
+                              <td className="p-3">
+                                <div className="flex gap-2">
+                                  <button onClick={handleSaveOrder} className="text-green-400 hover:text-green-300 transition-colors" title="Сохранить">
+                                    <Icon name="Check" size={16} />
+                                  </button>
+                                  <button onClick={() => setEditingOrder(null)} className="text-neutral-400 hover:text-white transition-colors" title="Отмена">
+                                    <Icon name="X" size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="p-4 text-white">{order.full_name}</td>
+                              <td className="p-4 text-neutral-300">{order.plan_label}</td>
+                              <td className="p-4 text-[#FF4D00] font-semibold">{order.price} ₽</td>
+                              <td className="p-4 text-neutral-400">{order.order_date}</td>
+                              <td className="p-4">
+                                <div className="flex gap-3">
+                                  <button onClick={() => handleEditOrder(order)} className="text-neutral-400 hover:text-white transition-colors" title="Редактировать">
+                                    <Icon name="Pencil" size={15} />
+                                  </button>
+                                  <button onClick={() => handleDeleteOrder(order.id)} className="text-neutral-400 hover:text-red-400 transition-colors" title="Удалить">
+                                    <Icon name="Trash2" size={15} />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
           )}
 
           {tab === 'menu' && (
@@ -316,40 +381,21 @@ export default function Admin() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
                         <div className="text-neutral-400 text-xs mb-1">Стандарт (350₽)</div>
-                        <Input
-                          value={day.standard}
-                          onChange={e => handleMenuChange(i, 'standard', e.target.value)}
-                          placeholder="Блюдо..."
-                          className="bg-neutral-800 border-neutral-700 text-white text-sm"
-                        />
+                        <Input value={day.standard} onChange={e => handleMenuChange(i, 'standard', e.target.value)} placeholder="Блюдо..." className="bg-neutral-800 border-neutral-700 text-white text-sm" />
                       </div>
                       <div>
                         <div className="text-neutral-400 text-xs mb-1">Стандарт+ (450₽)</div>
-                        <Input
-                          value={day.standard_plus}
-                          onChange={e => handleMenuChange(i, 'standard_plus', e.target.value)}
-                          placeholder="Блюдо..."
-                          className="bg-neutral-800 border-neutral-700 text-white text-sm"
-                        />
+                        <Input value={day.standard_plus} onChange={e => handleMenuChange(i, 'standard_plus', e.target.value)} placeholder="Блюдо..." className="bg-neutral-800 border-neutral-700 text-white text-sm" />
                       </div>
                       <div>
                         <div className="text-neutral-400 text-xs mb-1">Премиум (650₽)</div>
-                        <Input
-                          value={day.premium}
-                          onChange={e => handleMenuChange(i, 'premium', e.target.value)}
-                          placeholder="Блюдо..."
-                          className="bg-neutral-800 border-neutral-700 text-white text-sm"
-                        />
+                        <Input value={day.premium} onChange={e => handleMenuChange(i, 'premium', e.target.value)} placeholder="Блюдо..." className="bg-neutral-800 border-neutral-700 text-white text-sm" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <Button
-                onClick={handleSaveMenu}
-                disabled={saving}
-                className="mt-6 bg-[#FF4D00] hover:bg-[#e03d00] text-white font-semibold"
-              >
+              <Button onClick={handleSaveMenu} disabled={saving} className="mt-6 bg-[#FF4D00] hover:bg-[#e03d00] text-white font-semibold">
                 {saving ? 'Сохраняем...' : 'Сохранить меню'}
               </Button>
             </div>

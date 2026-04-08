@@ -9,8 +9,8 @@ def get_conn():
 def get_week_dates():
     today = date.today()
     monday = today - timedelta(days=today.weekday())
-    days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']
-    return [(monday + timedelta(days=i), days[i]) for i in range(5)]
+    days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
+    return [(monday + timedelta(days=i), days[i]) for i in range(7)]
 
 def handler(event: dict, context) -> dict:
     """Управление меню на неделю: получение и обновление блюд для каждого тарифа."""
