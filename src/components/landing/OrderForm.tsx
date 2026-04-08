@@ -7,8 +7,8 @@ import { useToast } from '@/hooks/use-toast'
 const ORDERS_URL = 'https://functions.poehali.dev/9bfc9070-3a77-4016-90ab-464e822401d4'
 
 const plans = [
-  { id: 'standard', label: 'Стандарт', price: 350, desc: 'Суп + второе блюдо' },
-  { id: 'standard_plus', label: 'Стандарт+', price: 450, desc: 'Суп + второе + напиток' },
+  { id: 'standard', label: 'Стандарт', price: 350, desc: 'Суп + второе блюдо + салат' },
+  { id: 'standard_plus', label: 'Стандарт+', price: 450, desc: 'Суп + второе + салат + напиток' },
   { id: 'premium', label: 'Премиум', price: 650, desc: 'Суп + второе + салат + напиток + десерт' },
 ]
 

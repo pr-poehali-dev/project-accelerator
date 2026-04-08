@@ -3,6 +3,7 @@ import Layout from '@/components/landing/Layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import Icon from '@/components/ui/icon'
 
 const ORDERS_URL = 'https://functions.poehali.dev/9bfc9070-3a77-4016-90ab-464e822401d4'
 const MENU_URL = 'https://functions.poehali.dev/c6021c97-ab9d-46c8-add5-7ad3db5f218e'
@@ -10,6 +11,7 @@ const MENU_URL = 'https://functions.poehali.dev/c6021c97-ab9d-46c8-add5-7ad3db5f
 interface Order {
   id: number
   full_name: string
+  plan: string
   plan_label: string
   price: number
   order_date: string
@@ -31,6 +33,11 @@ interface MenuDay {
 }
 
 const PIN = '1234'
+const PLAN_OPTIONS = [
+  { value: 'standard', label: 'Стандарт (350₽)' },
+  { value: 'standard_plus', label: 'Стандарт+ (450₽)' },
+  { value: 'premium', label: 'Премиум (650₽)' },
+]
 
 export default function Admin() {
   const [auth, setAuth] = useState(false)
@@ -40,6 +47,9 @@ export default function Admin() {
   const [menu, setMenu] = useState<MenuDay[]>([])
   const [tab, setTab] = useState<'orders' | 'menu'>('orders')
   const [saving, setSaving] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPlan, setEditPlan] = useState('')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -91,6 +101,41 @@ export default function Admin() {
     }
   }
 
+  const handleDeleteOrder = async (id: number) => {
+    if (!confirm('Удалить этот заказ?')) return
+    const res = await fetch(`${ORDERS_URL}?id=${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) {
+      toast({ title: 'Заказ удалён' })
+      fetchOrders()
+    } else {
+      toast({ title: 'Ошибка удаления', variant: 'destructive' })
+    }
+  }
+
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order)
+    setEditName(order.full_name)
+    setEditPlan(order.plan)
+  }
+
+  const handleSaveOrder = async () => {
+    if (!editingOrder) return
+    const res = await fetch(ORDERS_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editingOrder.id, full_name: editName, plan: editPlan })
+    })
+    const data = await res.json()
+    if (data.success) {
+      toast({ title: 'Заказ обновлён' })
+      setEditingOrder(null)
+      fetchOrders()
+    } else {
+      toast({ title: 'Ошибка обновления', variant: 'destructive' })
+    }
+  }
+
   if (!auth) {
     return (
       <Layout>
@@ -128,7 +173,7 @@ export default function Admin() {
           <h1 className="text-3xl font-bold text-white mb-2">Панель владельца</h1>
           <p className="text-neutral-400 mb-8">Управление заказами и меню</p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl p-4">
               <div className="text-neutral-400 text-xs uppercase tracking-wide mb-1">Всего заказов</div>
               <div className="text-3xl font-black text-white">{totalOrders}</div>
@@ -179,15 +224,81 @@ export default function Admin() {
                       <th className="text-left p-4 font-medium">Тариф</th>
                       <th className="text-left p-4 font-medium">Сумма</th>
                       <th className="text-left p-4 font-medium">Дата</th>
+                      <th className="text-left p-4 font-medium">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orders.map(order => (
                       <tr key={order.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/30">
-                        <td className="p-4 text-white">{order.full_name}</td>
-                        <td className="p-4 text-neutral-300">{order.plan_label}</td>
-                        <td className="p-4 text-[#FF4D00] font-semibold">{order.price} ₽</td>
-                        <td className="p-4 text-neutral-400">{order.order_date}</td>
+                        {editingOrder?.id === order.id ? (
+                          <>
+                            <td className="p-3">
+                              <Input
+                                value={editName}
+                                onChange={e => setEditName(e.target.value)}
+                                className="bg-neutral-700 border-neutral-600 text-white text-sm h-8"
+                              />
+                            </td>
+                            <td className="p-3">
+                              <select
+                                value={editPlan}
+                                onChange={e => setEditPlan(e.target.value)}
+                                className="bg-neutral-700 border border-neutral-600 text-white text-sm rounded-md px-2 h-8 w-full"
+                              >
+                                {PLAN_OPTIONS.map(p => (
+                                  <option key={p.value} value={p.value}>{p.label}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="p-3 text-[#FF4D00] font-semibold">
+                              {editPlan === 'standard' ? 350 : editPlan === 'standard_plus' ? 450 : 650} ₽
+                            </td>
+                            <td className="p-4 text-neutral-400">{order.order_date}</td>
+                            <td className="p-3">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={handleSaveOrder}
+                                  className="text-green-400 hover:text-green-300 transition-colors"
+                                  title="Сохранить"
+                                >
+                                  <Icon name="Check" size={16} />
+                                </button>
+                                <button
+                                  onClick={() => setEditingOrder(null)}
+                                  className="text-neutral-400 hover:text-white transition-colors"
+                                  title="Отмена"
+                                >
+                                  <Icon name="X" size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-4 text-white">{order.full_name}</td>
+                            <td className="p-4 text-neutral-300">{order.plan_label}</td>
+                            <td className="p-4 text-[#FF4D00] font-semibold">{order.price} ₽</td>
+                            <td className="p-4 text-neutral-400">{order.order_date}</td>
+                            <td className="p-4">
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={() => handleEditOrder(order)}
+                                  className="text-neutral-400 hover:text-white transition-colors"
+                                  title="Редактировать"
+                                >
+                                  <Icon name="Pencil" size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                  className="text-neutral-400 hover:text-red-400 transition-colors"
+                                  title="Удалить"
+                                >
+                                  <Icon name="Trash2" size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>

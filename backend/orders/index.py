@@ -7,10 +7,10 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
 def handler(event: dict, context) -> dict:
-    """Управление заказами обедов: создание и получение списка заказов."""
+    """Управление заказами обедов: создание, получение, редактирование и удаление заказов."""
     headers = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'application/json'
     }
@@ -20,8 +20,10 @@ def handler(event: dict, context) -> dict:
 
     conn = get_conn()
     cur = conn.cursor()
+    method = event.get('httpMethod')
+    params = event.get('queryStringParameters') or {}
 
-    if event.get('httpMethod') == 'POST':
+    if method == 'POST':
         body = json.loads(event.get('body') or '{}')
         full_name = body.get('full_name', '').strip()
         plan = body.get('plan', '')
@@ -43,7 +45,38 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return {'statusCode': 200, 'headers': headers, 'body': json.dumps({'id': order_id, 'success': True})}
 
-    if event.get('httpMethod') == 'GET':
+    if method == 'PUT':
+        body = json.loads(event.get('body') or '{}')
+        order_id = body.get('id')
+        full_name = body.get('full_name', '').strip()
+        plan = body.get('plan', '')
+
+        prices = {'standard': 350, 'standard_plus': 450, 'premium': 650}
+        if not order_id or not full_name or plan not in prices:
+            conn.close()
+            return {'statusCode': 400, 'headers': headers, 'body': json.dumps({'error': 'Неверные данные'})}
+
+        price = prices[plan]
+        cur.execute(
+            "UPDATE orders SET full_name=%s, plan=%s, price=%s WHERE id=%s",
+            (full_name, plan, price, order_id)
+        )
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': headers, 'body': json.dumps({'success': True})}
+
+    if method == 'DELETE':
+        order_id = params.get('id')
+        if not order_id:
+            conn.close()
+            return {'statusCode': 400, 'headers': headers, 'body': json.dumps({'error': 'Не указан id'})}
+
+        cur.execute("DELETE FROM orders WHERE id=%s", (order_id,))
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': headers, 'body': json.dumps({'success': True})}
+
+    if method == 'GET':
         cur.execute("""
             SELECT id, full_name, plan, price, order_date, created_at
             FROM orders

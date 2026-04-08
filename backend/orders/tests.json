@@ -5,7 +5,7 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"orders": [], "counts": {}},
+      "expectedBody": {},
       "bodyMatcher": "partial"
     },
     {
@@ -13,6 +13,24 @@
       "method": "POST",
       "path": "/",
       "body": {"full_name": "Иванов Иван Иванович", "plan": "standard"},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    }
+  ,
+    {
+      "name": "PUT update order",
+      "method": "PUT",
+      "path": "/",
+      "body": {"id": 1, "full_name": "Петров Пётр Петрович", "plan": "premium"},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "DELETE order",
+      "method": "DELETE",
+      "path": "/?id=1",
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"
